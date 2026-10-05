@@ -9,12 +9,23 @@ You can also include images in this folder and reference them in the markdown. E
 
 ## How it works
 
-Explain how your project works
+SPI controlled PWM peripheral. An external SPI controller writes to configure registers over SCLK, COPI, nCS. 
+Each write is 16 bits: a r/w bit, a 7 bit address, and 8 bits of data. No reads. 
+
+| Address | Register        | Description                    |
+|---------|-----------------|--------------------------------|
+| 0x00    | en_reg_out_7_0  | Output enable for uo_out[7:0]  |
+| 0x01    | en_reg_out_15_8 | Output enable for uio_out[7:0] |
+| 0x02    | en_reg_pwm_7_0  | PWM enable for uo_out[7:0]     |
+| 0x03    | en_reg_pwm_15_8 | PWM enable for uio_out[7:0]    |
+| 0x04    | pwm_duty_cycle  | PWM duty cycle (0-255)         |
 
 ## How to test
 
-Explain how to use your project
+Drive SCLK on ui_in[0], COPI on ui_in[1], and nCS on ui_in[2]. 
+Send a 16-bit write with nCS low and the data clocked out MSB first. 
+Run `make` in the test directory to run the cocotb testbench.
 
 ## External hardware
 
-List external hardware used in your project (e.g. PMOD, LED display, etc), if any
+None.
