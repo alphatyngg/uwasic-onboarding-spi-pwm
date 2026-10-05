@@ -5,6 +5,7 @@ project:
   discord:      "alpha.tyngg"      # Your discord username, for communication and automatically assigning you a Tapeout role (optional)
   description:  "SPI-controlled PWM peripheral for Tiny Tapeout."      # One line description of what your project does
   top_module:   "tt_um_uwasic_onboarding_alpha"      # Your top module name, must start with "tt_um_"
+  tiles:        "1x1"
 
   # List your project's source files here.
   # Source files must be in ./src and you must list each source file separately, one per line.
