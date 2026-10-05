@@ -151,6 +151,49 @@ async def test_spi(dut):
 
 @cocotb.test()
 async def test_pwm_freq(dut):
+    dut._log.info("Start PWM Frequency test")
+
+    # Set the clock period to 100 ns (10 MHz)
+    clock = Clock(dut.clk, 100, units="ns")
+    cocotb.start_soon(clock.start())
+
+    # Reset
+    dut._log.info("Reset")
+    dut.ena.value = 1
+
+    ncs = 1
+    bit = 0
+    sclk = 0
+    dut.ui_in.value = ui_in_logicarray(ncs, bit, sclk)
+
+    dut.rst_n.value = 0
+    await ClockCycles(dut.clk, 5)
+
+    dut.rst_n.value = 1
+    await ClockCycles(dut.clk, 5)
+
+    # turning pwm on, duty cycle 50%
+    await send_spi_transaction(dut, 1, 0x00, 0xFF)   # enable all uo_out outputs
+    await send_spi_transaction(dut, 1, 0x02, 0xFF)   # enable PWM mode on all uo_out
+    await send_spi_transaction(dut, 1, 0x04, 0x80)   # duty cycle = 0x80 (128 of 256, 50%)
+
+
+    pin = dut.uo_out[0]
+
+    await RisingEdge(pin)
+    t1 = cocotb.utils.get_sim_time(units="ns")
+    await RisingEdge(pin)
+    t2 = cocotb.utils.get_sim_time(units="ns")
+
+    # calculate period & freq
+    period_ns = t2 - t1
+    frequency_hz = 1e9 / period_ns             # freq from ns to Hz
+
+    dut._log.info(f"PWM period = {period_ns} ns, frequency = {frequency_hz} Hz")
+
+    # check if freq is +- 1% of 3kHz (+-30Hz)
+    assert 2970 <= frequency_hz <= 3030, f"PWM frequency {frequency_hz} Hz is out of expected range (2970-3030 Hz)"
+
     # Write your test here
     dut._log.info("PWM Frequency test completed successfully")
 
