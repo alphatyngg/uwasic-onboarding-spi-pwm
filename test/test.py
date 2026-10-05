@@ -209,5 +209,62 @@ async def test_pwm_freq(dut):
 
 @cocotb.test()
 async def test_pwm_duty(dut):
+
+    # Set the clock period to 100 ns (10 MHz)
+    clock = Clock(dut.clk, 100, units="ns")
+    cocotb.start_soon(clock.start())
+
+    # Reset
+    dut._log.info("Reset")
+    dut.ena.value = 1
+
+    ncs = 1
+    bit = 0
+    sclk = 0
+    dut.ui_in.value = ui_in_logicarray(ncs, bit, sclk)
+
+    dut.rst_n.value = 0
+    await ClockCycles(dut.clk, 5)
+
+    dut.rst_n.value = 1
+    await ClockCycles(dut.clk, 5)
+
+    # turning pwm on, duty cycle 50%
+    duty_value = 0x80
+    await send_spi_transaction(dut, 1, 0x00, 0xFF)         # enable all uo_out outputs
+    await send_spi_transaction(dut, 1, 0x02, 0xFF)         # enable PWM mode on all uo_out
+    await send_spi_transaction(dut, 1, 0x04, duty_value)   # duty cycle = 0x80 (128 of 256, 50%)
+
+
+    # find first rising edge
+    while (int(dut.uo_out.value) & 1):               # masking to isolate bit 0 of uo_out
+        await ClockCycles(dut.clk, 1)                # wait for it to go low
+    while not (int(dut.uo_out.value) & 1):           # masking to isolate bit 0 of uo_out
+        await ClockCycles(dut.clk, 1)                # wait for it to go high
+    t1 = cocotb.utils.get_sim_time(units="ns")
+
+    # find falling edge
+    while (int(dut.uo_out.value) & 1):               # masking to isolate bit 0 of uo_out
+        await ClockCycles(dut.clk, 1)                # wait for it to go low
+    t2 = cocotb.utils.get_sim_time(units="ns")
+
+    # find second rising edge
+    while not (int(dut.uo_out.value) & 1):           # masking to isolate bit 0 of uo_out
+        await ClockCycles(dut.clk, 1)                # wait for it to go high
+    t3 = cocotb.utils.get_sim_time(units="ns")
+
+
+    # calculate high time, period, and duty cycle
+    high_time_ns = t2 - t1
+    period_ns = t3 - t1
+    duty_cycle = (high_time_ns / period_ns) * 100
+
+    # test 1, 50% duty cycle
+    expected_duty_cycle = (duty_value / 256) * 100
+
+    assert abs(duty_cycle - expected_duty_cycle) <= 1.0, f"PWM duty cycle {duty_cycle}% is out of expected range (49%-51%)"
+    dut._log.info(f"PWM high time = {high_time_ns} ns, period = {period_ns} ns, duty cycle = {duty_cycle}%")
+
+
     # Write your test here
     dut._log.info("PWM Duty Cycle test completed successfully")
