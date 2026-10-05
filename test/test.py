@@ -178,12 +178,21 @@ async def test_pwm_freq(dut):
     await send_spi_transaction(dut, 1, 0x04, 0x80)   # duty cycle = 0x80 (128 of 256, 50%)
 
 
-    pin = dut.uo_out[0]
-
-    await RisingEdge(pin)
+    # find first rising edge
+    while (int(dut.uo_out.value) & 1):               # masking to isolate bit 0 of uo_out
+        await ClockCycles(dut.clk, 1)                # wait for it to go low
+    while not (int(dut.uo_out.value) & 1):           # masking to isolate bit 0 of uo_out
+        await ClockCycles(dut.clk, 1)                # wait for it to go high
     t1 = cocotb.utils.get_sim_time(units="ns")
-    await RisingEdge(pin)
+
+
+    # find second rising edge 
+    while (int(dut.uo_out.value) & 1):               # masking to isolate bit 0 of uo_out
+        await ClockCycles(dut.clk, 1)                # wait for it to go low
+    while not (int(dut.uo_out.value) & 1):           # masking to isolate bit 0 of uo_out
+        await ClockCycles(dut.clk, 1)                # wait for it to go high
     t2 = cocotb.utils.get_sim_time(units="ns")
+
 
     # calculate period & freq
     period_ns = t2 - t1
