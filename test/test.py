@@ -203,7 +203,6 @@ async def test_pwm_freq(dut):
     # check if freq is +- 1% of 3kHz (+-30Hz)
     assert 2970 <= frequency_hz <= 3030, f"PWM frequency {frequency_hz} Hz is out of expected range (2970-3030 Hz)"
 
-    # Write your test here
     dut._log.info("PWM Frequency test completed successfully")
 
 
@@ -260,11 +259,36 @@ async def test_pwm_duty(dut):
     duty_cycle = (high_time_ns / period_ns) * 100
 
     # test 1, 50% duty cycle
+    dut._log.info("Testing 50% duty cycle")
     expected_duty_cycle = (duty_value / 256) * 100
 
     assert abs(duty_cycle - expected_duty_cycle) <= 1.0, f"PWM duty cycle {duty_cycle}% is out of expected range (49%-51%)"
     dut._log.info(f"PWM high time = {high_time_ns} ns, period = {period_ns} ns, duty cycle = {duty_cycle}%")
 
 
-    # Write your test here
+    # test 2, 0% duty cycle
+    dut._log.info("Testing 0% duty cycle")
+    duty_value = 0x00
+    await send_spi_transaction(dut, 1, 0x04, duty_value)
+    await ClockCycles(dut.clk, 10000)                           # wait for the PWM output to stabilize
+
+    count = 0
+    while count < 1000:
+        assert (int(dut.uo_out.value) & 1) == 0, f"PWM output should be low for 0% duty cycle, but got {dut.uo_out.value}"
+        await ClockCycles(dut.clk, 1)
+        count += 1
+
+
+    # test 3, 100% duty cycle
+    dut._log.info("Testing 100% duty cycle")
+    duty_value = 0xFF
+    await send_spi_transaction(dut, 1, 0x04, duty_value)
+    await ClockCycles(dut.clk, 10000)                         # wait for the PWM output to stabilize 
+
+    count = 0
+    while count < 1000:
+        assert (int(dut.uo_out.value) & 1) == 1, f"PWM output should be high for 100% duty cycle, but got {dut.uo_out.value}"
+        await ClockCycles(dut.clk, 1)
+        count += 1
+
     dut._log.info("PWM Duty Cycle test completed successfully")
