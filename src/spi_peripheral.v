@@ -51,17 +51,17 @@ end
 
 
 reg[2:0] sclk_sync;         // metastability regs to avoid metastability 
-reg[2:0] copi_sync;
+reg[1:0] copi_sync;
 reg[2:0] ncs_sync;
 
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         sclk_sync <= 3'b000;                // ensures all sigals are reset to 0
-        copi_sync <= 3'b000;
+        copi_sync <= 2'b00;
         ncs_sync <= 3'b000;
     end else begin
         sclk_sync <= {sclk_sync[1:0], sclk};        // shift in the new values of the signals on each clock edge, 
-        copi_sync <= {copi_sync[1:0], copi};        // 2 (old val lower bits) + 1 (new) = 3 bits to avoid metastability
+        copi_sync <= {copi_sync[0], copi};        // 2 (old val lower bits) + 1 (new) = 3 bits to avoid metastability
         ncs_sync <= {ncs_sync[1:0], ncs};
     end
 
